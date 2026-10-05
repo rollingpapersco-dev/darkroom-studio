@@ -1,4 +1,4 @@
-import { toBlob } from 'html-to-image';
+import { toSvg } from 'html-to-image';
 import pf400 from '@fontsource/playfair-display/files/playfair-display-latin-400-italic.woff2?url';
 import pf600 from '@fontsource/playfair-display/files/playfair-display-latin-600-italic.woff2?url';
 import pf400x from '@fontsource/playfair-display/files/playfair-display-latin-ext-400-italic.woff2?url';
@@ -49,51 +49,101 @@ function bakeFilter(ctx, w, h, mono, tint) {
 }
 
 // Bakes every <img> on the board into a self-contained data URL so the exporter never refetches.
-async function inlineImages(board, mono, tint) {
+// Each image is resampled to the pixels it actually covers in the export (not its full source size):
+// oversized embeds are what make WebKit drop images from the snapshot.
+async function inlineImages(board, mono, tint, pr) {
   const imgs = Array.from(board.querySelectorAll('img'));
   const saved = [];
   await Promise.all(imgs.map(async img => {
     const src = img.getAttribute('src') || '';
     if (!src) return;
     try {
-      if (!img.complete || !img.naturalWidth) await new Promise((res, rej) => { img.onload = res; img.onerror = rej; });
+      if (!img.complete) await new Promise(res => { img.onload = res; img.onerror = res; });
       if (img.decode) await img.decode().catch(() => {});
       const w = img.naturalWidth, h = img.naturalHeight; if (!w || !h) return;
-      const k = Math.min(1, 4096 / Math.max(w, h));
-      const c = document.createElement('canvas'); c.width = Math.round(w * k); c.height = Math.round(h * k);
+      const css = img.getAttribute('style') || '';
+      const zoom = parseFloat((/transform:\s*scale\(([\d.]+)\)/.exec(css) || [])[1]) || 1;
+      const bw = img.offsetWidth || w, bh = img.offsetHeight || h;
+      const fit = /object-fit:\s*cover/.test(css) ? Math.max(bw / w, bh / h) : Math.min(bw / w, bh / h);
+      const k = Math.min(1, 4096 / Math.max(w, h), fit * zoom * pr * 1.25);
+      const c = document.createElement('canvas'); c.width = Math.max(1, Math.round(w * k)); c.height = Math.max(1, Math.round(h * k));
       const ctx = c.getContext('2d', { willReadFrequently: true });
+      ctx.imageSmoothingQuality = 'high';
       ctx.drawImage(img, 0, 0, c.width, c.height);
-      const filtered = (img.getAttribute('style') || '').includes('grayscale(');
+      const filtered = css.includes('grayscale(');
       if (filtered) bakeFilter(ctx, c.width, c.height, mono, tint);
       const isPng = /\.png($|\?)|^data:image\/png/i.test(src);
-      const data = c.toDataURL(isPng ? 'image/png' : 'image/jpeg', 0.95);
+      const data = c.toDataURL(isPng ? 'image/png' : 'image/jpeg', 0.92);
+      c.width = c.height = 0; // release canvas memory right away (iOS caps it)
+      if (data.length < 32) return;
       saved.push([img, src, img.style.filter]);
-      img.setAttribute('src', data);
+      await new Promise(r => { img.onload = r; img.onerror = r; img.setAttribute('src', data); if (img.complete) r(); });
       if (filtered) img.style.filter = 'none';
-      await new Promise(r => { if (img.complete) r(); else { img.onload = r; img.onerror = r; } });
       if (img.decode) await img.decode().catch(() => {});
     } catch (e) { console.warn('inline failed', src.slice(0, 60), e); }
   }));
   return () => saved.forEach(([img, src, fl]) => { img.setAttribute('src', src); img.style.filter = fl; });
 }
 
-const isWebKit = /AppleWebKit/.test(navigator.userAgent) && !/Chrome|Chromium|Edg\//.test(navigator.userAgent);
+// A coarse fingerprint of a canvas; two draws of the same snapshot match exactly once every image has painted.
+function signature(canvas) {
+  const c = document.createElement('canvas');
+  c.width = 96; c.height = Math.max(1, Math.round(96 * canvas.height / canvas.width));
+  const ctx = c.getContext('2d', { willReadFrequently: true });
+  ctx.drawImage(canvas, 0, 0, c.width, c.height);
+  const d = ctx.getImageData(0, 0, c.width, c.height).data;
+  c.width = c.height = 0;
+  return d;
+}
+function changedCells(a, b) {
+  let n = 0;
+  for (let i = 0; i < a.length; i += 4) if (Math.abs(a[i] - b[i]) + Math.abs(a[i + 1] - b[i + 1]) + Math.abs(a[i + 2] - b[i + 2]) > 3) n++;
+  return n;
+}
+const wait = ms => new Promise(r => setTimeout(r, ms));
+const loadImage = src => new Promise((res, rej) => { const i = new Image(); i.decoding = 'sync'; i.onload = () => res(i); i.onerror = rej; i.src = src; });
 
 // Renders the board at `long` px on its long edge (0 = native size). Returns { blob, w, h }.
 export async function renderPng(board, T, { long = 0, mono = 1, tint = 0.2, onStatus = () => {} } = {}) {
   if (document.fonts && document.fonts.ready) await document.fonts.ready;
   const pr = long ? long / Math.max(T.w, T.h) : 1;
+  const W = Math.round(T.w * pr), H = Math.round(T.h * pr);
   let fontEmbedCSS = '';
   try { fontEmbedCSS = await getFontCSS(); } catch (e) { onStatus('Font embed failed — serif may fall back'); }
   onStatus('Preparing images…');
-  const restore = await inlineImages(board, mono, tint);
+  const restore = await inlineImages(board, mono, tint, pr);
+  let svg;
   try {
     onStatus('Rendering…');
-    const opts = { width: T.w, height: T.h, pixelRatio: pr, cacheBust: false, fontEmbedCSS, backgroundColor: '#000', style: { transform: 'none' } };
-    // WebKit often paints images inside the SVG snapshot only from the second pass on.
-    if (isWebKit) { await toBlob(board, { ...opts, pixelRatio: 0.25 }); await toBlob(board, { ...opts, pixelRatio: 0.25 }); }
-    const blob = await toBlob(board, opts);
-    if (!blob) throw new Error('empty export');
-    return { blob, w: Math.round(T.w * pr), h: Math.round(T.h * pr) };
+    svg = await toSvg(board, { width: T.w, height: T.h, cacheBust: false, fontEmbedCSS, backgroundColor: '#000', style: { transform: 'none' } });
   } finally { restore(); }
+
+  // The snapshot is an SVG with the photos embedded. Browsers (Safari above all) can paint it before
+  // those photos have decoded, which is how exports lost their images. Draw it repeatedly and only
+  // accept a draw once it is identical to the one before it, i.e. nothing is still arriving.
+  const img = await loadImage(svg);
+  if (img.decode) await img.decode().catch(() => {});
+  const draw = () => {
+    const c = document.createElement('canvas'); c.width = W; c.height = H;
+    const ctx = c.getContext('2d');
+    ctx.fillStyle = '#000'; ctx.fillRect(0, 0, W, H);
+    ctx.drawImage(img, 0, 0, W, H);
+    return c;
+  };
+  let cnv = draw(), sig = signature(cnv), stable = false;
+  for (let i = 0; i < 10 && !stable; i++) {
+    await wait(i === 0 ? 300 : 200);
+    const next = draw(), nsig = signature(next);
+    const changed = changedCells(sig, nsig);
+    console.debug('[export] draw', i + 2, 'changed cells', changed);
+    stable = changed === 0;
+    cnv.width = cnv.height = 0;
+    cnv = next; sig = nsig;
+  }
+  if (!stable) console.warn('[export] snapshot never settled; using the last draw');
+  console.debug('[export]', { size: W + 'x' + H, stable });
+  const blob = await new Promise(r => cnv.toBlob(r, 'image/png'));
+  cnv.width = cnv.height = 0;
+  if (!blob) throw new Error('empty export');
+  return { blob, w: W, h: H };
 }

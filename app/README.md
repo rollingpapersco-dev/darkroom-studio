@@ -51,8 +51,9 @@ and with customised type, logo, tint, B&W and aspect settings, render identicall
 - **Export B&W:** the black-and-white and tint look is computed in JavaScript rather than with canvas
   `ctx.filter`, so it now matches in Safari and iOS too. The prototype noted Safari as a gap.
 - **Fonts:** Playfair Display is bundled, not loaded from Google Fonts, so the serif works offline and in exports.
-- **iOS rendering:** WebKit gets two warm-up render passes, a known workaround for images that are
-  missing from the first html-to-image render on iOS.
+- **Reliable photos in exports:** each photo is embedded at the size it covers in the export, not its full source
+  size. The snapshot is then drawn repeatedly until two draws are identical, so a draw made before the photos
+  finished decoding (a common cause of missing images, especially in Safari) is never the one saved.
 - **Text inputs:** they use 16px text so iOS doesn't zoom in when a field is focused.
 
 Regenerate the home-screen icons from `public/assets/logo.png` with `npm run icons` (needs Playwright).
