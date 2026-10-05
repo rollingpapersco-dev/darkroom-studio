@@ -1,0 +1,16 @@
+<!-- @dsCard group="Components" viewport="700x320" name="Forms" -->
+<!DOCTYPE html><html><head><meta charset="UTF-8"><link rel="stylesheet" href="../../styles.css"><style>*{box-sizing:border-box;margin:0;padding:0}body{background:#000;color:#f5f5f7;font-family:var(--font-sans);-webkit-font-smoothing:antialiased;padding:24px}a{color:#f5f5f7;text-decoration:none}a:hover{color:#fff}</style>
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js"></script>
+<script src="../../_ds_bundle.js"></script></head><body><div id="root"></div>
+<script type="text/babel">
+const NS = Object.values(window).find(v => v && typeof v === 'object' && v.Button && v.NavBar) || {};
+const { FieldBox, StepTracker } = NS;
+const Row = ({children, gap=12}) => <div style={{display:'flex',gap,alignItems:'center',flexWrap:'wrap',marginBottom:18}}>{children}</div>;
+const Lbl = ({children}) => <div style={{fontSize:11,color:'#86868b',fontFamily:'ui-monospace,monospace',marginBottom:8}}>{children}</div>;
+ReactDOM.createRoot(document.getElementById('root')).render(<>
+<StepTracker steps={3} current={1} style={{marginBottom:28}} />
+<div style={{fontSize:32,fontWeight:700,color:'#fff',letterSpacing:'-0.03em',marginBottom:20}}>Identify yourself.</div>
+<div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'0 14px'}}><FieldBox label="Artist Name" /><FieldBox label="City (optional)" /></div></>);
+</script></body></html>

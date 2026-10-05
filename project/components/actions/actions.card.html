@@ -1,0 +1,17 @@
+<!-- @dsCard group="Components" viewport="700x330" name="Actions" -->
+<!DOCTYPE html><html><head><meta charset="UTF-8"><link rel="stylesheet" href="../../styles.css"><style>*{box-sizing:border-box;margin:0;padding:0}body{background:#000;color:#f5f5f7;font-family:var(--font-sans);-webkit-font-smoothing:antialiased;padding:24px}a{color:#f5f5f7;text-decoration:none}a:hover{color:#fff}</style>
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js"></script>
+<script src="../../_ds_bundle.js"></script></head><body><div id="root"></div>
+<script type="text/babel">
+const NS = Object.values(window).find(v => v && typeof v === 'object' && v.Button && v.NavBar) || {};
+const { Button, Pill } = NS;
+const Row = ({children, gap=12}) => <div style={{display:'flex',gap,alignItems:'center',flexWrap:'wrap',marginBottom:18}}>{children}</div>;
+const Lbl = ({children}) => <div style={{fontSize:11,color:'#86868b',fontFamily:'ui-monospace,monospace',marginBottom:8}}>{children}</div>;
+ReactDOM.createRoot(document.getElementById('root')).render(<>
+<Lbl>primary · ghost</Lbl><Row><Button>Stream Episodes</Button><Button variant="ghost">View Pricing</Button></Row>
+<Lbl>nav · outline · dock · dock-back</Lbl><Row><Button variant="nav">Apply Now</Button><Button variant="outline">Watch</Button><Button variant="dock">Continue</Button><Button variant="dock-back">Back</Button></Row>
+<Lbl>tier · tier-featured</Lbl><Row><div style={{width:220}}><Button variant="tier">Apply to Record</Button></div><div style={{width:220}}><Button variant="tier-featured">Apply to Record</Button></div></Row>
+<Lbl>Pill</Lbl><Row gap={8}><Pill>EP.01</Pill><Pill>EP.02</Pill><Pill active>EP.03</Pill><Pill>EP.04</Pill><Pill>EP.05</Pill></Row></>);
+</script></body></html>

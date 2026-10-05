@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>html,body{margin:0;height:100%;background:#000;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;-webkit-font-smoothing:antialiased}a{color:#f5f5f7}a:hover{color:#fff}</style>
+</helmet>
+<div style="height:100vh;display:grid;grid-template-rows:auto minmax(0,1fr);background:#000;color:#f5f5f7">
+<header style="display:flex;align-items:center;gap:24px;padding:12px 20px;border-bottom:1px solid #1c1c1e;flex-wrap:wrap">
+<img src="assets/logo.png" alt="DARKROOM" style="max-height:18px;height:auto;display:block">
+<nav style="display:flex;gap:6px;flex-wrap:wrap">
+<sc-for list="{{ tabs }}" as="t" hint-placeholder-count="4">
+<sc-if value="{{ t.active }}"><button onClick="{{ t.onClick }}" style="font-size:13px;font-weight:600;color:#000;background:#fff;border:1px solid #fff;padding:8px 16px;border-radius:20px;cursor:pointer">{{ t.label }}</button></sc-if>
+<sc-if value="{{ t.inactive }}"><button onClick="{{ t.onClick }}" style="font-size:13px;font-weight:500;color:#f5f5f7;background:transparent;border:1px solid #1c1c1e;padding:8px 16px;border-radius:20px;cursor:pointer" style-hover="border-color:rgba(255,255,255,0.4)">{{ t.label }}</button></sc-if>
+</sc-for>
+</nav>
+<a href="{{ currentSrc }}" target="_blank" style="margin-left:auto;font-size:12px;color:#86868b;text-decoration:none">Open in new tab ↗</a>
+</header>
+<iframe key="{{ current }}" src="{{ currentSrc }}" title="{{ current }}" style="width:100%;height:100%;border:0;display:block;background:#000"></iframe>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+const TABS = [
+  ['Social Studio', 'ui_kits/social/Social%20Studio.dc.html'],
+  ['Social Idents', 'ui_kits/social/Social%20Idents.dc.html'],
+  ['Between Seasons Plan', 'plans/Between%20Seasons%20Plan.dc.html'],
+  ['Archives Posters', 'ui_kits/social/Social%20Studio.dc.html#archA'],
+  ['Website UI Kit', 'ui_kits/website/index.html'],
+];
+class Component extends DCLogic {
+  state = { tab: (() => { try { return localStorage.getItem('dr-hub-tab') || TABS[0][0]; } catch (e) { return TABS[0][0]; } })() };
+  renderVals() {
+    const cur = TABS.find(t => t[0] === this.state.tab) || TABS[0];
+    return {
+      tabs: TABS.map(([label]) => ({ label, active: label === cur[0], inactive: label !== cur[0], onClick: () => { try { localStorage.setItem('dr-hub-tab', label); } catch (e) {} this.setState({ tab: label }); } })),
+      current: cur[0], currentSrc: cur[1],
+    };
+  }
+}
+</script>
+</body>
+</html>

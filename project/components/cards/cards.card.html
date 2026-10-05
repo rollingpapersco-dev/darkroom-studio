@@ -1,0 +1,23 @@
+<!-- @dsCard group="Components" viewport="700x720" name="Cards" -->
+<!DOCTYPE html><html><head><meta charset="UTF-8"><link rel="stylesheet" href="../../styles.css"><style>*{box-sizing:border-box;margin:0;padding:0}body{background:#000;color:#f5f5f7;font-family:var(--font-sans);-webkit-font-smoothing:antialiased;padding:24px}a{color:#f5f5f7;text-decoration:none}a:hover{color:#fff}</style>
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js"></script>
+<script src="../../_ds_bundle.js"></script></head><body><div id="root"></div>
+<script type="text/babel">
+const NS = Object.values(window).find(v => v && typeof v === 'object' && v.Button && v.NavBar) || {};
+const { EpisodeCard, CarouselCard, InterviewCard, PriceCard, RuleCard } = NS;
+const Row = ({children, gap=12}) => <div style={{display:'flex',gap,alignItems:'center',flexWrap:'wrap',marginBottom:18}}>{children}</div>;
+const Lbl = ({children}) => <div style={{fontSize:11,color:'#86868b',fontFamily:'ui-monospace,monospace',marginBottom:8}}>{children}</div>;
+ReactDOM.createRoot(document.getElementById('root')).render(<>
+<div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:20}}>
+<EpisodeCard img="../../assets/episodes/ep08.jpg" num="EP.08" artist="RANDY MORGAN" track="Changes" />
+<RuleCard num="RULE 01" title="No audience">The Darkroom has no crowd to hide behind. No energy to borrow. The performance exists in a vacuum — and either it holds or it doesn't.</RuleCard>
+<CarouselCard img="../../assets/episodes/ep06.jpg" num="EP.06" style={{width:'100%'}} />
+<InterviewCard meta="Interview • EP.09" artist="FIDO" quote={'"On Dance for Jesus, building independently through Oosha Records, and performing a record built for fifty thousand people in a room built for one."'} style={{padding:'2rem',minHeight:0}} />
+</div>
+<div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:20,marginTop:32}}>
+<PriceCard tier="TIER 01 · BASIC" description="For artists building their first major visual content asset." rate="₦200k" features={['Studio time — Lekki','Single camera setup','Teaser cut']} style={{padding:'2rem'}} />
+<PriceCard featured tier="TIER 02 · STANDARD" description="For artists mid-campaign or building toward a project launch." rate="₦350k" features={['Studio time — Lekki','Multi-camera setup','Teaser cut (Reels/TikTok)']} style={{padding:'2rem'}} />
+</div></>);
+</script></body></html>

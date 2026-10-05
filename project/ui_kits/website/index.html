@@ -1,0 +1,33 @@
+<!-- @dsCard group="Website" viewport="1440x900" name="Darkroom website" subtitle="Home, Archive, Interviews, About + portal, Pricing" -->
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Darkroom — UI kit</title>
+<link rel="stylesheet" href="../../styles.css">
+<style>*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}html,body{background:#000;overflow-x:clip}body{color:var(--text-main);font-family:var(--font-sans);font-size:15px;line-height:1.47059;-webkit-font-smoothing:antialiased}a{color:#f5f5f7}a:hover{color:#fff}@keyframes cuePulse{0%,100%{opacity:.4}50%{opacity:1}}</style>
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js"></script>
+<script src="loader.js"></script><script src="data.js"></script>
+</head><body><div id="root"></div>
+<script>
+(async () => { try {
+  await loadDR('../../components/', ['actions/Button.jsx','actions/Pill.jsx','text/Eyebrow.jsx','text/Headline.jsx','text/Badge.jsx','navigation/NavBar.jsx','navigation/Footer.jsx','cards/EpisodeCard.jsx','cards/CarouselCard.jsx','cards/InterviewCard.jsx','cards/PriceCard.jsx','cards/RuleCard.jsx','forms/FieldBox.jsx','forms/StepTracker.jsx']);
+  for (const f of ['Home.jsx','Archive.jsx','Interviews.jsx','Pricing.jsx','About.jsx']) {
+    const src = await (await fetch(f)).text();
+    new Function(Babel.transform(src, { presets: ['react'] }).code)();
+  }
+  const { NavBar, Footer } = window.DR;
+  function App() {
+    const [page, setPage] = React.useState(localStorage.getItem('dr-kit-page') || 'Home');
+    const [portal, setPortal] = React.useState(false);
+    const go = p => { if (p === 'Apply') { setPage('About'); setPortal(true); } else setPage(p); localStorage.setItem('dr-kit-page', p === 'Apply' ? 'About' : p); window.scrollTo(0, 0); };
+    const S = { Home: HomeScreen, Episodes: ArchiveScreen, Interviews: InterviewsScreen, About: AboutScreen, Pricing: PricingScreen }[page];
+    const h = React.createElement;
+    return h(React.Fragment, null,
+      h(NavBar, { active: page, logoSrc: '../../assets/logo.png', onNavigate: go, style: page === 'Home' ? { borderBottomColor: 'transparent' } : null }),
+      h(S, { key: page, go, portal, setPortal }),
+      h(Footer, { style: page === 'Home' || page === 'About' ? null : { marginTop: page === 'Pricing' ? '8rem' : '6rem' } }));
+  }
+  ReactDOM.createRoot(document.getElementById('root')).render(React.createElement(App));
+} catch (e) { console.error('[kit]', e && e.stack || e); } })();
+</script></body></html>

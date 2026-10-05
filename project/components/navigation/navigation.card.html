@@ -1,0 +1,14 @@
+<!-- @dsCard group="Components" viewport="700x260" name="Navigation" -->
+<!DOCTYPE html><html><head><meta charset="UTF-8"><link rel="stylesheet" href="../../styles.css"><style>*{box-sizing:border-box;margin:0;padding:0}body{background:#000;color:#f5f5f7;font-family:var(--font-sans);-webkit-font-smoothing:antialiased;padding:24px}a{color:#f5f5f7;text-decoration:none}a:hover{color:#fff}</style>
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js"></script>
+<script src="../../_ds_bundle.js"></script></head><body><div id="root"></div>
+<script type="text/babel">
+const NS = Object.values(window).find(v => v && typeof v === 'object' && v.Button && v.NavBar) || {};
+const { NavBar, Footer } = NS;
+const Row = ({children, gap=12}) => <div style={{display:'flex',gap,alignItems:'center',flexWrap:'wrap',marginBottom:18}}>{children}</div>;
+const Lbl = ({children}) => <div style={{fontSize:11,color:'#86868b',fontFamily:'ui-monospace,monospace',marginBottom:8}}>{children}</div>;
+ReactDOM.createRoot(document.getElementById('root')).render(<>
+<div style={{margin:-24}}><NavBar position="relative" active="Episodes" logoSrc="../../assets/logo.png" /><div style={{height:60}}/><Footer /></div></>);
+</script></body></html>

@@ -1,0 +1,33 @@
+:root {
+  /* Page gutters */
+  --gutter: clamp(1.5rem, 5vw, 4rem);
+  --gutter-fixed: 4rem;
+  --gutter-mobile: 1.5rem;
+  --nav-pad-y: 1.2rem;
+  --page-top: 8rem;          /* first section below fixed nav */
+  --container: 1200px;
+  --container-wide: 1400px;
+  --container-form: 720px;
+
+  /* Radii — exact values from source */
+  --radius-xs: 8px;    /* mobile menu item */
+  --radius-sm: 10px;   /* thumb, menu button */
+  --radius-md: 12px;   /* field box, chip */
+  --radius-lg: 16px;   /* archive card, mobile menu */
+  --radius-xl: 18px;   /* carousel card, pill */
+  --radius-2xl: 20px;  /* price / rule / interview cards */
+  --radius-pill: 28px; /* large buttons */
+
+  /* Elevation — only one shadow exists */
+  --shadow-float: 0 30px 80px rgba(0, 0, 0, 0.65);
+  --blur-nav: blur(30px);
+  --blur-menu: blur(24px);
+  --blur-chip: blur(8px);
+
+  /* Motion */
+  --dur-fast: 0.2s;
+  --dur-med: 0.3s;
+  --dur-slow: 0.35s;
+  --dur-fade: 0.6s;
+  --ease: ease;
+}

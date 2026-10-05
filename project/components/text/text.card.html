@@ -1,0 +1,16 @@
+<!-- @dsCard group="Components" viewport="700x300" name="Text" -->
+<!DOCTYPE html><html><head><meta charset="UTF-8"><link rel="stylesheet" href="../../styles.css"><style>*{box-sizing:border-box;margin:0;padding:0}body{background:#000;color:#f5f5f7;font-family:var(--font-sans);-webkit-font-smoothing:antialiased;padding:24px}a{color:#f5f5f7;text-decoration:none}a:hover{color:#fff}</style>
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js"></script>
+<script src="../../_ds_bundle.js"></script></head><body><div id="root"></div>
+<script type="text/babel">
+const NS = Object.values(window).find(v => v && typeof v === 'object' && v.Button && v.NavBar) || {};
+const { Eyebrow, Headline, Em, Badge } = NS;
+const Row = ({children, gap=12}) => <div style={{display:'flex',gap,alignItems:'center',flexWrap:'wrap',marginBottom:18}}>{children}</div>;
+const Lbl = ({children}) => <div style={{fontSize:11,color:'#86868b',fontFamily:'ui-monospace,monospace',marginBottom:8}}>{children}</div>;
+ReactDOM.createRoot(document.getElementById('root')).render(<>
+<Eyebrow style={{marginBottom:12}}>Lagos · Nigeria</Eyebrow>
+<Headline size="section">Your record.<br/><Em>This room.</Em></Headline>
+<div style={{display:'flex',gap:16,alignItems:'center',marginTop:24}}><Eyebrow tone="accent" size={10}>Afrobeats · Street</Eyebrow><Badge>EP.08</Badge><Badge variant="featured">Recommended</Badge></div></>);
+</script></body></html>

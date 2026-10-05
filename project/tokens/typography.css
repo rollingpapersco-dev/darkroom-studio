@@ -1,0 +1,34 @@
+:root {
+  --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-serif: 'Playfair Display', Georgia, serif;
+
+  /* Display scale (weight 800, negative tracking) */
+  --type-hero: clamp(38px, 6vw, 84px);        /* lh 1.1, ls -0.04em */
+  --type-apply: clamp(38px, 5vw, 56px);       /* ls -0.03em */
+  --type-manifesto: clamp(28px, 3.5vw, 50px); /* 700, lh 1.15 */
+  --type-pricing-title: clamp(32px, 4vw, 48px);
+  --type-post: clamp(26px, 4vw, 44px);
+  --type-page-title: 40px;                    /* archive / interviews */
+  --type-price: 42px;                         /* ls -0.04em */
+  --type-carousel-title: clamp(20px, 2.6vw, 30px);
+  --type-card-title-lg: 28px;                 /* interview artist, 700 */
+  --type-card-title: 22px;                    /* rule title, 700 */
+  --type-card-title-sm: 20px;                 /* archive artist, 700 */
+
+  /* Body */
+  --type-body-lg: 18px;
+  --type-body: 15px;          /* lh 1.47059 */
+  --type-body-sm: 14px;
+  --type-meta: 13px;
+  --type-nav: 12px;
+  --type-eyebrow: 11px;       /* 600–700, uppercase, ls 0.08–0.14em */
+  --type-micro: 10px;
+
+  --lh-body: 1.47059;
+  --lh-tight: 1.1;
+  --ls-display: -0.04em;
+  --ls-heading: -0.03em;
+  --ls-title: -0.02em;
+  --ls-eyebrow: 0.12em;
+  --ls-eyebrow-wide: 0.14em;
+}
