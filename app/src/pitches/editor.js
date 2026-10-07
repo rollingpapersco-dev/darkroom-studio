@@ -47,6 +47,7 @@ export function createEditor(root, { onSelect = () => {} } = {}) {
   let db = null, editing = false, sel = null, alive = true;
 
   const imgs = [...root.querySelectorAll('img[data-img]')];
+  const markFilled = img => { if (img.dataset.empty) img.toggleAttribute('data-filled', img.getAttribute('src') !== img.dataset.src0); };
   const applyView = img => {
     const v = iview[img.dataset.img] || {};
     if (v.x != null) { img.style.objectPosition = v.x + '% ' + v.y + '%'; img.style.transformOrigin = v.x + '% ' + v.y + '%'; }
@@ -54,7 +55,7 @@ export function createEditor(root, { onSelect = () => {} } = {}) {
     img.style.transform = v.z && v.z !== 100 ? 'scale(' + v.z / 100 + ')' : '';
   };
   imgs.forEach(img => { img.dataset.src0 = img.getAttribute('src'); img.dataset.pos0 = img.style.objectPosition || ''; img.draggable = false; applyView(img); });
-  openDB().then(d => { db = d; if (!alive) return; imgs.forEach(img => dbGet(db, img.dataset.img).then(u => { if (u && alive) img.src = u; })); });
+  openDB().then(d => { db = d; if (!alive) return; imgs.forEach(img => dbGet(db, img.dataset.img).then(u => { if (u && alive) { img.src = u; markFilled(img); } })); });
 
   // Text leaves: elements that own a non-empty text node and aren't inside another leaf (prototype's leaves()).
   const nodes = [];
@@ -62,7 +63,7 @@ export function createEditor(root, { onSelect = () => {} } = {}) {
     let i = 0;
     sec.querySelectorAll('div,span,p').forEach(el => {
       const own = [...el.childNodes].some(c => c.nodeType === 3 && c.textContent.trim());
-      if (!own) return;
+      if (!own || el.closest('[data-noedit]')) return;
       if (el.parentElement && el.parentElement.closest('[data-ed]')) return;
       el.setAttribute('data-ed', si + '-' + i++); nodes.push(el);
     });
@@ -126,7 +127,7 @@ export function createEditor(root, { onSelect = () => {} } = {}) {
       const img = sel;
       try {
         const url = await fileToURL(file);
-        img.src = url; dbPut(db, img.dataset.img, url);
+        img.src = url; markFilled(img); dbPut(db, img.dataset.img, url);
         iview[img.dataset.img] = {}; writeJSON(IKEY, iview); applyView(img);
         return true;
       } catch (e) { return false; }
@@ -135,7 +136,7 @@ export function createEditor(root, { onSelect = () => {} } = {}) {
       if (!sel) return;
       const k = sel.dataset.img;
       delete iview[k]; writeJSON(IKEY, iview); dbPut(db, k, null);
-      sel.src = sel.dataset.src0; applyView(sel);
+      sel.src = sel.dataset.src0; markFilled(sel); applyView(sel);
     },
     resetAll() {
       try { localStorage.removeItem(KEY); localStorage.removeItem(IKEY); } catch (e) {}

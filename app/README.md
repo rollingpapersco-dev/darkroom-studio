@@ -46,14 +46,21 @@ At 960px and wider (tablet landscape or desktop) the app switches to the prototy
 - **Open** shows the deck as a scrolling list of slides.
 - **Present ▶** shows one slide at a time, full screen. Tap the right side or press → to go forward, the left
   third or ← to go back, and Esc to exit.
-- **Export PDF ↓** opens the print dialog, set up as one 1920×1080 slide per page. Choose **Save as PDF**; on
-  iPhone use the share sheet's **Save to Files**. On the index, Export PDF opens the deck and starts printing.
+- **Export PDF ↓** builds the PDF in the app and offers **Save / Share** or **Download**:
+  - **Pages:** one slide per page, **1440 × 810 pt** (1920 × 1080 px at 96 dpi; 20 × 11.25 in), 16:9. That's the
+    same shape as widescreen Keynote, PowerPoint and Google Slides, so the PDF fills a 16:9 screen with no bars.
+  - **Rendering:** each slide is rendered at 3840 × 2160 and stored as a JPEG with photos baked to black and white,
+    so images come out the same on every device. Text is part of the image, so it can't be selected in the PDF.
+  - **From the index:** Export PDF opens the deck and starts the export.
+  - **Browser print:** desktop printing (Cmd/Ctrl+P) still uses the one-slide-per-page print rules.
 - Standard decks have a **Brand** field that replaces the brand name throughout the deck. Use it to swap
   "[Your brand]" (Drinks, Streetwear, Fintech) or to pitch Sennheiser or JBL instead of Shure, or Airtel instead
   of MTN. It's saved per deck.
 - **Red Bull** has **Edit**:
   - **Text:** tap any text to change it.
   - **Images:** tap a photo or logo to replace it (camera roll or drag and drop), then set zoom and X/Y.
+    All five proof boxes take a photo. The design had no still for EP.13 (Taves), so that box shows its
+    outlined "13" until you add one.
   - **Reset all** clears every edit.
   - Edits are saved on this device: text in localStorage, images in IndexedDB.
 
@@ -73,7 +80,8 @@ At 960px and wider (tablet landscape or desktop) the app switches to the prototy
 | `src/calendar/` | Posting calendar; `posting-calendar.json` is the handoff's seed data, used as is |
 | `src/pitches/standard-deck.html`, `decks.json` | The ten standard decks: one template (the Apple Music deck's markup) plus each brand's copy |
 | `src/pitches/redbull-deck.html`, `editor.js` | Red Bull deck markup (verbatim) and its in-place editor (ported from `pitch-editor.js`) |
-| `src/pitches/Deck.jsx` | Deck viewer: slide list, Present mode, print/PDF rules, Brand field |
+| `src/pitches/Deck.jsx` | Deck viewer: slide list, Present mode, PDF export, print rules, Brand field |
+| `src/pitches/pdf.js` | Minimal PDF writer: one full-page JPEG per page |
 | `scripts/gen-decks.py` | Regenerates the deck files from the handoff and checks that they reproduce all ten decks exactly |
 
 The boards are checked pixel for pixel against the prototype. All 17 templates, at their defaults

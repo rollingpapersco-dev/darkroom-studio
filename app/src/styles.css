@@ -269,6 +269,10 @@ input[type=range]::-moz-range-thumb { width: 20px; height: 20px; border-radius: 
 /* deck-stage.js's typographic defaults (zero specificity, so authored text-wrap wins) */
 :where(.slide) :where(h1,h2,h3,h4,h5,h6) { text-wrap: balance; }
 :where(.slide) :where(p,li,blockquote,figcaption) { text-wrap: pretty; }
+/* Red Bull proof box 2: gradient only once a photo is in; the outlined "13" only while it's empty */
+.slide [data-empty] ~ [data-fill-only] { display: none; }
+.slide [data-filled] ~ [data-fill-only] { display: block; }
+.slide [data-filled] ~ [data-empty-only] { display: none; }
 .deck-list.editing [data-ed] { outline: calc(1.5px / var(--s)) dashed rgba(200, 54, 42, 0.6); outline-offset: calc(4px / var(--s)); cursor: text; }
 .deck-list.editing img[data-img] { outline: calc(1.5px / var(--s)) dashed rgba(200, 54, 42, 0.8); outline-offset: calc(-6px / var(--s)); cursor: pointer; }
 .deck-list.editing img[data-img].ed-sel { outline: calc(4px / var(--s)) solid #C8362A; outline-offset: calc(-4px / var(--s)); }
@@ -297,3 +301,7 @@ input[type=range]::-moz-range-thumb { width: 20px; height: 20px; border-radius: 
   .deck-brand { flex: 1 1 auto; min-width: 120px; }
   .deck-brand input { width: 100%; min-width: 0; }
 }
+
+.pdf-meta { display: flex; flex-direction: column; gap: 6px; font-size: 13px; line-height: 1.5; color: var(--text-label); }
+.pdf-name { font-size: 15px; font-weight: 700; color: var(--text-pure); word-break: break-word; }
+.pill:disabled { opacity: 0.5; cursor: default; }

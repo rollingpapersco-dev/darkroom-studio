@@ -105,7 +105,7 @@ export default function App() {
     setSheet('export'); setResult(null); setExporting(true);
     await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
     try {
-      const out = await renderPng(boardRef.current, T, { long, mono: (dt.mono ?? true) ? 1 : 0, tint: (dt.tint ?? 20) / 100, onStatus: setStatus });
+      const out = await renderPng(boardRef.current, T, { long, onStatus: setStatus });
       const name = 'darkroom-' + tpl + '-' + out.w + 'x' + out.h + '.png';
       setResult({ ...out, name, url: URL.createObjectURL(out.blob) });
       setStatus('Exported ' + out.w + '×' + out.h);

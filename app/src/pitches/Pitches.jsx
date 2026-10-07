@@ -28,7 +28,7 @@ export default function Pitches() {
           ))}
         </div>
         <p style={{ margin: 0, fontSize: 13, color: '#86868b' }}>7 slides each. Same story, tailored "Why" and "Ways to partner" slides. Swap "[Your brand]" in the Drinks, Streetwear and Fintech decks; change "Shure" or "MTN" to pitch Sennheiser, JBL or Airtel.</p>
-        <p style={{ margin: 0, fontSize: 13, color: '#86868b' }}>Export PDF opens the deck here with the print dialog (use your browser’s Back to return). Choose <span style={{ color: '#fff' }}>Save as PDF</span>, set margins to <span style={{ color: '#fff' }}>None</span> and turn on <span style={{ color: '#fff' }}>Background graphics</span>. One slide per page, 16:9.</p>
+        <p style={{ margin: 0, fontSize: 13, color: '#86868b' }}>Export PDF builds the deck as a PDF you can <span style={{ color: '#fff' }}>save or share</span> straight from the app: one slide per page, <span style={{ color: '#fff' }}>1920 × 1080</span> (16:9), with every photo in place.</p>
       </div>
     </div>
   );

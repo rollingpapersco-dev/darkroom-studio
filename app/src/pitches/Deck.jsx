@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { deckBySlug, deckHTML } from './decks.js';
 import { createEditor } from './editor.js';
+import { renderPng } from '../exporter.js';
+import { jpegsToPdf } from './pdf.js';
 
 const W = 1920, H = 1080;
 const brandKey = slug => 'dr-pitch-brand-' + slug;
@@ -18,6 +20,9 @@ const PRINT_CSS = `@page { size: ${W}px ${H}px; margin: 0; }
   * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
 }`;
 
+// PDF pages: 1440×810pt (= 1920×1080px at 96dpi, 16:9), each slide rendered at 3840×2160.
+const PDF_LONG = 3840;
+const raf2 = () => new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
 const waitImages = root => Promise.all([...root.querySelectorAll('img')].map(im => (im.complete ? 0 : new Promise(r => { im.onload = im.onerror = r; }))));
 
 export default function Deck({ slug, print }) {
@@ -29,6 +34,7 @@ export default function Deck({ slug, print }) {
   const [view, setView] = useState(null);
   const [present, setPresent] = useState(null);
   const [status, setStatus] = useState('');
+  const [pdf, setPdf] = useState(null); // { i, n } while rendering, then { url, blob, name, n, size }
   const listRef = useRef(null), editorRef = useRef(null), fileRef = useRef(null);
 
   const html = useMemo(() => (deck ? deckHTML(deck, brand.trim() || deck.defaultBrand) : ''), [deck, brand]);
@@ -61,22 +67,42 @@ export default function Deck({ slug, print }) {
   }, [deck, ready]);
   useEffect(() => { editorRef.current?.setEdit(editing); }, [editing]);
 
-  const doPrint = useCallback(async () => {
+  const name = brand.trim() || deck?.defaultBrand || '';
+  const exportPdf = useCallback(async () => {
+    if (!listRef.current) return;
     setEditing(false); setPresent(null);
-    setStatus('Preparing PDF…');
-    if (document.fonts?.ready) await document.fonts.ready;
-    await waitImages(listRef.current);
-    await new Promise(r => setTimeout(r, 400));
-    setStatus('');
-    window.print();
-  }, []);
+    await raf2();
+    const els = [...listRef.current.querySelectorAll('.slide')];
+    setPdf({ i: 0, n: els.length });
+    try {
+      if (document.fonts?.ready) await document.fonts.ready;
+      await waitImages(listRef.current);
+      const pages = [];
+      for (let i = 0; i < els.length; i++) {
+        setPdf({ i: i + 1, n: els.length });
+        const out = await renderPng(els[i], { w: W, h: H }, { long: PDF_LONG, type: 'image/jpeg', quality: 0.9 });
+        pages.push({ bytes: new Uint8Array(await out.blob.arrayBuffer()), w: out.w, h: out.h });
+      }
+      const title = 'Darkroom × ' + name;
+      const blob = jpegsToPdf(pages, { width: 1440, height: 810, title });
+      const file = ('Darkroom x ' + name + ' - partnership proposal').replace(/[^\w .×-]+/g, '').replace(/\s+/g, ' ').trim() + '.pdf';
+      setPdf({ url: URL.createObjectURL(blob), blob, name: file, n: pages.length, size: blob.size });
+    } catch (e) {
+      console.error(e); setPdf(null); setStatus('PDF export failed. Try again');
+    }
+  }, [name]);
+  useEffect(() => () => { if (pdf?.url) URL.revokeObjectURL(pdf.url); }, [pdf]);
+  useEffect(() => { if (!status) return; const t = setTimeout(() => setStatus(''), 3000); return () => clearTimeout(t); }, [status]);
 
-  // #pitch/<slug>/print: open straight into the print dialog, as the prototype's ?print=1 did
+  // #pitch/<slug>/print (the index's Export PDF): open the deck and start the export straight away
+  const ready0 = frameW > 0;
   useEffect(() => {
-    if (!print) return;
-    const t = setTimeout(() => { doPrint(); history.replaceState(null, '', '#pitch/' + slug); }, 1200);
+    if (!print || !ready0) return;
+    history.replaceState(null, '', '#pitch/' + slug);
+    const t = setTimeout(exportPdf, 600);
     return () => clearTimeout(t);
-  }, [print, slug, doPrint]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [print, ready0]);
 
   if (!deck) return (
     <div className="deck-page"><div className="deck-missing"><p>That pitch doesn’t exist.</p><a className="pill ghost" href="#pitches">All pitches</a></div></div>
@@ -107,7 +133,7 @@ export default function Deck({ slug, print }) {
             </>
           )}
           <button className="pill ghost" onClick={() => { setEditing(false); setPresent(0); }}>Present ▶</button>
-          <button className="pill primary" onClick={doPrint}>Export PDF ↓</button>
+          <button className="pill primary" onClick={exportPdf} disabled={!!pdf && !pdf.url}>Export PDF ↓</button>
         </div>
       </header>
 
@@ -141,6 +167,8 @@ export default function Deck({ slug, print }) {
           </div>
         </div>
       )}
+
+      {pdf && <PdfSheet pdf={pdf} onClose={() => { if (pdf.url) setPdf(null); }} />}
 
       {present != null && <Present list={listRef} index={present} count={slides.length} onIndex={setPresent} />}
     </div>
@@ -178,6 +206,37 @@ function Present({ list, index, count, onIndex }) {
       <div className="present-bar" onClick={e => e.stopPropagation()}>
         <span>{index + 1} / {count}</span>
         <button className="icon-btn" aria-label="Exit presentation" onClick={() => onIndex(null)}>×</button>
+      </div>
+    </div>
+  );
+}
+
+function PdfSheet({ pdf, onClose }) {
+  const file = pdf.blob && new File([pdf.blob], pdf.name, { type: 'application/pdf' });
+  const canShare = !!(file && navigator.canShare && navigator.canShare({ files: [file] }));
+  const share = async () => { try { await navigator.share({ files: [file], title: pdf.name }); } catch (e) {} };
+  return (
+    <div className="sheet-wrap" onClick={onClose}>
+      <div className="sheet" role="dialog" aria-label="Export PDF" onClick={e => e.stopPropagation()}>
+        <div className="sheet-head"><span className="sheet-title">Export PDF</span>{pdf.url && <button className="icon-btn" aria-label="Close" onClick={onClose}>×</button>}</div>
+        <div className="sheet-body">
+          {!pdf.url ? (
+            <div className="exp-busy"><div className="exp-bar"><i /></div><p>Rendering slide {pdf.i} of {pdf.n}…</p></div>
+          ) : (
+            <div className="exp-result">
+              <div className="pdf-meta">
+                <span className="pdf-name">{pdf.name}</span>
+                <span>{pdf.n} pages · 16:9 · {(pdf.size / 1048576).toFixed(1)} MB</span>
+                <span>Each page is 1920 × 1080 (1440 × 810 pt, 20 × 11.25 in), the same shape as a widescreen Keynote, PowerPoint or Google Slides deck.</span>
+              </div>
+              <div className="exp-actions">
+                {canShare && <button className="pill primary big" onClick={share}>Save / Share</button>}
+                <a className={'pill big ' + (canShare ? 'ghost' : 'primary')} href={pdf.url} download={pdf.name}>Download PDF</a>
+              </div>
+              <p className="note">On iPhone, Save / Share → Save to Files keeps the PDF exactly as exported.</p>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

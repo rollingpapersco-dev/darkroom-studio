@@ -28,22 +28,44 @@ function getFontCSS() {
 }
 export const warmFonts = () => getFontCSS().catch(() => {});
 
-// Same maths as the board's CSS filter: grayscale(m) contrast(1 + .08m) brightness(1 - .25t).
-// Done by hand so exports match in every browser (Safari has no canvas ctx.filter).
-function bakeFilter(ctx, w, h, mono, tint) {
-  if (!mono && !tint) return;
+// Bakes an element's computed CSS filter (grayscale / contrast / brightness / saturate, applied in order)
+// into the pixels, with the same maths browsers use for those filter functions. Done by hand so exports
+// match everywhere (Safari has no canvas ctx.filter, and drops filtered images when printing).
+function parseFilter(f) {
+  const ops = [];
+  (f || '').replace(/(grayscale|contrast|brightness|saturate)\(\s*([\d.]+)(%?)\s*\)/g, (_, fn, v, pct) => { ops.push([fn, parseFloat(v) / (pct ? 100 : 1)]); return ''; });
+  return ops;
+}
+function bakeFilter(ctx, w, h, ops) {
+  const live = ops.filter(([fn, v]) => !((fn === 'grayscale' && v === 0) || (fn !== 'grayscale' && v === 1)));
+  if (!live.length) return;
   const px = ctx.getImageData(0, 0, w, h);
-  const a = px.data, g = 1 - mono;
-  const c = 1 + 0.08 * mono, b = 1 - 0.25 * tint;
-  const r0 = 0.2126 + 0.7874 * g, r1 = 0.7152 - 0.7152 * g, r2 = 0.0722 - 0.0722 * g;
-  const g0 = 0.2126 - 0.2126 * g, g1 = 0.7152 + 0.2848 * g, g2 = 0.0722 - 0.0722 * g;
-  const b0 = 0.2126 - 0.2126 * g, b1 = 0.7152 - 0.7152 * g, b2 = 0.0722 + 0.9278 * g;
-  const off = (0.5 - 0.5 * c) * 255;
+  const a = px.data;
+  // fold everything into one affine colour transform: out = M·rgb + k
+  let M = [1, 0, 0, 0, 1, 0, 0, 0, 1], K = [0, 0, 0];
+  const mul = (N, L) => { // apply N (3x3) and offset L after current transform
+    const R = [];
+    for (let r = 0; r < 3; r++) for (let c = 0; c < 3; c++) R[r * 3 + c] = N[r * 3] * M[c] + N[r * 3 + 1] * M[3 + c] + N[r * 3 + 2] * M[6 + c];
+    K = [0, 1, 2].map(r => N[r * 3] * K[0] + N[r * 3 + 1] * K[1] + N[r * 3 + 2] * K[2] + L[r]);
+    M = R;
+  };
+  for (const [fn, v] of live) {
+    if (fn === 'grayscale' || fn === 'saturate') {
+      const g = fn === 'grayscale' ? 1 - Math.min(1, v) : v;
+      mul([0.2126 + 0.7874 * g, 0.7152 - 0.7152 * g, 0.0722 - 0.0722 * g,
+           0.2126 - 0.2126 * g, 0.7152 + 0.2848 * g, 0.0722 - 0.0722 * g,
+           0.2126 - 0.2126 * g, 0.7152 - 0.7152 * g, 0.0722 + 0.9278 * g], [0, 0, 0]);
+    } else if (fn === 'contrast') {
+      const o = (0.5 - 0.5 * v) * 255; mul([v, 0, 0, 0, v, 0, 0, 0, v], [o, o, o]);
+    } else if (fn === 'brightness') {
+      mul([v, 0, 0, 0, v, 0, 0, 0, v], [0, 0, 0]);
+    }
+  }
   for (let i = 0; i < a.length; i += 4) {
     const R = a[i], G = a[i + 1], B = a[i + 2];
-    a[i] = ((r0 * R + r1 * G + r2 * B) * c + off) * b;
-    a[i + 1] = ((g0 * R + g1 * G + g2 * B) * c + off) * b;
-    a[i + 2] = ((b0 * R + b1 * G + b2 * B) * c + off) * b;
+    a[i] = M[0] * R + M[1] * G + M[2] * B + K[0];
+    a[i + 1] = M[3] * R + M[4] * G + M[5] * B + K[1];
+    a[i + 2] = M[6] * R + M[7] * G + M[8] * B + K[2];
   }
   ctx.putImageData(px, 0, 0);
 }
@@ -51,7 +73,7 @@ function bakeFilter(ctx, w, h, mono, tint) {
 // Bakes every <img> on the board into a self-contained data URL so the exporter never refetches.
 // Each image is resampled to the pixels it actually covers in the export (not its full source size):
 // oversized embeds are what make WebKit drop images from the snapshot.
-async function inlineImages(board, mono, tint, pr) {
+async function inlineImages(board, pr) {
   const imgs = Array.from(board.querySelectorAll('img'));
   const saved = [];
   await Promise.all(imgs.map(async img => {
@@ -60,7 +82,7 @@ async function inlineImages(board, mono, tint, pr) {
     try {
       if (!img.complete) await new Promise(res => { img.onload = res; img.onerror = res; });
       if (img.decode) await img.decode().catch(() => {});
-      const w = img.naturalWidth, h = img.naturalHeight; if (!w || !h) return;
+      const w = img.naturalWidth, h = img.naturalHeight; if (!w || !h || w * h <= 4) return; // nothing to fetch for 1px placeholders
       const css = img.getAttribute('style') || '';
       const zoom = parseFloat((/transform:\s*scale\(([\d.]+)\)/.exec(css) || [])[1]) || 1;
       const bw = img.offsetWidth || w, bh = img.offsetHeight || h;
@@ -70,9 +92,10 @@ async function inlineImages(board, mono, tint, pr) {
       const ctx = c.getContext('2d', { willReadFrequently: true });
       ctx.imageSmoothingQuality = 'high';
       ctx.drawImage(img, 0, 0, c.width, c.height);
-      const filtered = css.includes('grayscale(');
-      if (filtered) bakeFilter(ctx, c.width, c.height, mono, tint);
-      const isPng = /\.png($|\?)|^data:image\/png/i.test(src);
+      const ops = parseFilter(getComputedStyle(img).filter);
+      const filtered = ops.length > 0;
+      if (filtered) bakeFilter(ctx, c.width, c.height, ops);
+      const isPng = /\.(png|gif|webp|svg)($|\?)|^data:image\/(png|gif|webp|svg)/i.test(src); // keep transparency
       const data = c.toDataURL(isPng ? 'image/png' : 'image/jpeg', 0.92);
       c.width = c.height = 0; // release canvas memory right away (iOS caps it)
       if (data.length < 32) return;
@@ -104,14 +127,15 @@ const wait = ms => new Promise(r => setTimeout(r, ms));
 const loadImage = src => new Promise((res, rej) => { const i = new Image(); i.decoding = 'sync'; i.onload = () => res(i); i.onerror = rej; i.src = src; });
 
 // Renders the board at `long` px on its long edge (0 = native size). Returns { blob, w, h }.
-export async function renderPng(board, T, { long = 0, mono = 1, tint = 0.2, onStatus = () => {} } = {}) {
+// `type`/`quality` pick the output encoding (PNG by default; decks use JPEG for compact PDFs).
+export async function renderPng(board, T, { long = 0, type = 'image/png', quality, onStatus = () => {} } = {}) {
   if (document.fonts && document.fonts.ready) await document.fonts.ready;
   const pr = long ? long / Math.max(T.w, T.h) : 1;
   const W = Math.round(T.w * pr), H = Math.round(T.h * pr);
   let fontEmbedCSS = '';
   try { fontEmbedCSS = await getFontCSS(); } catch (e) { onStatus('Font embed failed — serif may fall back'); }
   onStatus('Preparing images…');
-  const restore = await inlineImages(board, mono, tint, pr);
+  const restore = await inlineImages(board, pr);
   let svg;
   try {
     onStatus('Rendering…');
@@ -142,7 +166,7 @@ export async function renderPng(board, T, { long = 0, mono = 1, tint = 0.2, onSt
   }
   if (!stable) console.warn('[export] snapshot never settled; using the last draw');
   console.debug('[export]', { size: W + 'x' + H, stable });
-  const blob = await new Promise(r => cnv.toBlob(r, 'image/png'));
+  const blob = await new Promise(r => cnv.toBlob(r, type, quality));
   cnv.width = cnv.height = 0;
   if (!blob) throw new Error('empty export');
   return { blob, w: W, h: H };
