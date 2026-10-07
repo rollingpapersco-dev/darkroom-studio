@@ -1,8 +1,12 @@
-# Darkroom Social Studio (installable PWA)
+# Darkroom Studio (installable PWA)
 
-A mobile app version of the Social Studio from the Claude Design handoff
-(`project/ui_kits/social/Social Studio.dc.html`). It has the same 17 templates and the same edit
-controls, and exports PNG or 4K. It's built phone first, installs to the home screen and works offline.
+Darkroom's in-house app: phone first, installs to the home screen and works offline. It has three sections,
+switched from the nav at the top:
+
+- **Studio**: the Social Studio from the first Claude Design handoff (`project/ui_kits/social/Social Studio.dc.html`),
+  with all 17 templates and their edit controls, plus PNG and 4K export.
+- **Calendar** (`#calendar`): the 28-day Archives posting calendar from `design_handoff_pitches_calendar/`.
+- **Pitches** (`#pitches`): the eleven brand partnership decks from the same handoff, with PDF export.
 
 ## Run
 
@@ -30,6 +34,29 @@ On Android, Chrome offers **Install app**. A service worker only registers over 
 
 At 960px and wider (tablet landscape or desktop) the app switches to the prototype's three-column layout.
 
+### Calendar
+
+- Tap a day to open its details: format, pillar, platforms, post time, asset and note.
+- **Copy caption** copies the caption and hashtags.
+- **Mark as posted** fades the card and moves the "N of 28 posted" bar. Posted days are saved on this device.
+- Today's card has a red border.
+
+### Pitches
+
+- **Open** shows the deck as a scrolling list of slides.
+- **Present ▶** shows one slide at a time, full screen. Tap the right side or press → to go forward, the left
+  third or ← to go back, and Esc to exit.
+- **Export PDF ↓** opens the print dialog, set up as one 1920×1080 slide per page. Choose **Save as PDF**; on
+  iPhone use the share sheet's **Save to Files**. On the index, Export PDF opens the deck and starts printing.
+- Standard decks have a **Brand** field that replaces the brand name throughout the deck. Use it to swap
+  "[Your brand]" (Drinks, Streetwear, Fintech) or to pitch Sennheiser or JBL instead of Shure, or Airtel instead
+  of MTN. It's saved per deck.
+- **Red Bull** has **Edit**:
+  - **Text:** tap any text to change it.
+  - **Images:** tap a photo or logo to replace it (camera roll or drag and drop), then set zoom and X/Y.
+  - **Reset all** clears every edit.
+  - Edits are saved on this device: text in localStorage, images in IndexedDB.
+
 ## How it maps to the design
 
 | File | Role |
@@ -42,9 +69,18 @@ At 960px and wider (tablet landscape or desktop) the app switches to the prototy
 | `src/storage.js` | Edits in localStorage, imported images in IndexedDB (same keys as the prototype) |
 | `src/tokens/` | Design tokens copied from `project/tokens/` |
 | `vite.config.js` | Also generates `sw.js` with a precache list of the build output (offline support) |
+| `src/Root.jsx` | Section nav and hash routing (`#calendar`, `#pitches`, `#pitch/<slug>[/print]`; anything else is the Studio) |
+| `src/calendar/` | Posting calendar; `posting-calendar.json` is the handoff's seed data, used as is |
+| `src/pitches/standard-deck.html`, `decks.json` | The ten standard decks: one template (the Apple Music deck's markup) plus each brand's copy |
+| `src/pitches/redbull-deck.html`, `editor.js` | Red Bull deck markup (verbatim) and its in-place editor (ported from `pitch-editor.js`) |
+| `src/pitches/Deck.jsx` | Deck viewer: slide list, Present mode, print/PDF rules, Brand field |
+| `scripts/gen-decks.py` | Regenerates the deck files from the handoff and checks that they reproduce all ten decks exactly |
 
 The boards are checked pixel for pixel against the prototype. All 17 templates, at their defaults
-and with customised type, logo, tint, B&W and aspect settings, render identically.
+and with customised type, logo, tint, B&W and aspect settings, render identically. The calendar, the pitches
+index and all 79 deck slides (in print layout, which is what the PDF uses) also match their prototypes pixel for pixel.
+Slides keep the design runtime's defaults: content-box sizing, and `text-wrap: pretty` on body text and
+`balance` on headings.
 
 ### Differences from the prototype
 
